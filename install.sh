@@ -49,6 +49,60 @@ done
 [[ $EUID -ne 0 ]] && { err "This script must be run as root"; exit 1; }
 TARGET_HOME="/home/$TARGET_USER"
 
+# ─────────────────────────────────────────────
+# Hardware detection
+# ─────────────────────────────────────────────
+
+detect_hardware() {
+    CPU_VENDOR="unknown"
+    if grep -qi "GenuineIntel" /proc/cpuinfo; then
+        CPU_VENDOR="intel"
+    elif grep -qi "AuthenticAMD" /proc/cpuinfo; then
+        CPU_VENDOR="amd"
+    fi
+
+    HAS_NVIDIA=false
+    HAS_AMD_GPU=false
+    HAS_INTEL_GPU=false
+
+    local gpu_lines
+    gpu_lines=$(lspci 2>/dev/null | grep -iE "VGA|3D controller" || true)
+
+    if echo "$gpu_lines" | grep -qi "nvidia"; then
+        HAS_NVIDIA=true
+    fi
+    if echo "$gpu_lines" | grep -qi "amd\|radeon"; then
+        HAS_AMD_GPU=true
+    fi
+    if echo "$gpu_lines" | grep -qi "intel"; then
+        HAS_INTEL_GPU=true
+    fi
+
+    # Build VIDEO_CARDS value
+    VIDEO_CARDS_VAL=""
+    if $HAS_INTEL_GPU; then
+        VIDEO_CARDS_VAL="intel"
+    fi
+    if $HAS_AMD_GPU; then
+        VIDEO_CARDS_VAL="${VIDEO_CARDS_VAL:+$VIDEO_CARDS_VAL }amdgpu radeonsi"
+    fi
+    if $HAS_NVIDIA; then
+        VIDEO_CARDS_VAL="${VIDEO_CARDS_VAL:+$VIDEO_CARDS_VAL }nvidia"
+    fi
+    if [[ -z "$VIDEO_CARDS_VAL" ]]; then
+        VIDEO_CARDS_VAL="fbdev vesa"
+        warn "No recognized GPU detected, falling back to fbdev/vesa"
+    fi
+}
+
+detect_hardware
+
+GPU_SUMMARY=""
+$HAS_INTEL_GPU && GPU_SUMMARY+="Intel " || true
+$HAS_AMD_GPU && GPU_SUMMARY+="AMD " || true
+$HAS_NVIDIA && GPU_SUMMARY+="NVIDIA " || true
+GPU_SUMMARY="${GPU_SUMMARY:-(none detected)}"
+
 echo -e "${BOLD}"
 echo "  Gentoo Hyprland Desktop Setup"
 echo "  =============================="
@@ -58,6 +112,14 @@ echo "  Password: ****"
 echo "  Hostname: $TARGET_HOSTNAME"
 echo "  Timezone: $TARGET_TZ"
 echo "  Cores:    $(nproc)"
+echo ""
+echo -e "  ${CYAN}Hardware detected:${NC}"
+echo "  CPU vendor:   $CPU_VENDOR"
+echo "  GPU(s):       $GPU_SUMMARY"
+echo "  VIDEO_CARDS:  $VIDEO_CARDS_VAL"
+if [[ "$CPU_VENDOR" == "unknown" ]]; then
+    warn "Unknown CPU vendor -- microcode will not be installed"
+fi
 echo ""
 read -rp "Proceed? [y/N] " confirm
 [[ "$confirm" =~ ^[Yy]$ ]] || { echo "Aborted."; exit 0; }
@@ -72,11 +134,20 @@ log "Detected $NCORES CPU cores"
 log "Installing make.conf"
 cp "$SCRIPT_DIR/portage/make.conf" /etc/portage/make.conf
 sed -i "s/MAKEOPTS=\"-j[0-9]*\"/MAKEOPTS=\"-j${NCORES}\"/" /etc/portage/make.conf
+sed -i "s/VIDEO_CARDS=\"[^\"]*\"/VIDEO_CARDS=\"${VIDEO_CARDS_VAL}\"/" /etc/portage/make.conf
+log "VIDEO_CARDS set to: $VIDEO_CARDS_VAL"
 
 log "Installing package.use files"
 [[ -f /etc/portage/package.use ]] && mv /etc/portage/package.use /etc/portage/package.use.bak
 mkdir -p /etc/portage/package.use
 cp "$SCRIPT_DIR"/portage/package.use/* /etc/portage/package.use/
+
+if $HAS_AMD_GPU; then
+    log "AMD GPU detected: enabling vulkan + vaapi USE flags for mesa"
+    cat > /etc/portage/package.use/01-amd-gpu <<'EOF'
+media-libs/mesa vulkan vaapi
+EOF
+fi
 
 log "Installing package.accept_keywords files"
 [[ -f /etc/portage/package.accept_keywords ]] && mv /etc/portage/package.accept_keywords /etc/portage/package.accept_keywords.bak
@@ -106,6 +177,21 @@ phase 2 "Package installation"
 
 log "Installing world file"
 cp "$SCRIPT_DIR/portage/world" /var/lib/portage/world
+
+if [[ "$CPU_VENDOR" != "intel" ]]; then
+    log "Non-Intel CPU: removing intel-microcode from world"
+    sed -i '/^sys-firmware\/intel-microcode$/d' /var/lib/portage/world
+fi
+if ! $HAS_NVIDIA; then
+    log "No NVIDIA GPU: removing nvidia-drivers from world"
+    sed -i '/^x11-drivers\/nvidia-drivers$/d' /var/lib/portage/world
+fi
+if $HAS_AMD_GPU; then
+    log "AMD GPU detected: adding vulkan-loader to world"
+    if ! grep -q '^media-libs/vulkan-loader$' /var/lib/portage/world; then
+        echo "media-libs/vulkan-loader" >> /var/lib/portage/world
+    fi
+fi
 
 log "Installing all packages (this will take a very long time on first run)"
 log "Running: emerge -uDN @world"
@@ -197,7 +283,12 @@ phase 5 "System configuration"
 # ─────────────────────────────────────────────
 
 log "Installing udev rules"
-cp "$SCRIPT_DIR/system/udev/80-nvidia-pm.rules" /etc/udev/rules.d/
+if $HAS_NVIDIA; then
+    log "NVIDIA GPU detected: installing NVIDIA runtime PM udev rule"
+    cp "$SCRIPT_DIR/system/udev/80-nvidia-pm.rules" /etc/udev/rules.d/
+else
+    log "No NVIDIA GPU: skipping NVIDIA udev rules"
+fi
 
 if [[ -d /sys/class/leds/asus::kbd_backlight ]]; then
     log "ASUS keyboard backlight detected, installing backlight rule"
@@ -210,10 +301,20 @@ log "Installing firewall config"
 cp "$SCRIPT_DIR/system/nftables.conf" /etc/nftables.conf
 
 log "Installing modprobe configs"
-cp "$SCRIPT_DIR/system/modprobe.d/nvidia.conf" /etc/modprobe.d/
+if $HAS_NVIDIA; then
+    log "NVIDIA GPU detected: installing NVIDIA modprobe config"
+    cp "$SCRIPT_DIR/system/modprobe.d/nvidia.conf" /etc/modprobe.d/
+else
+    log "No NVIDIA GPU: skipping NVIDIA modprobe config"
+fi
 
 log "Installing GRUB config"
 cp "$SCRIPT_DIR/system/grub/default-grub" /etc/default/grub
+if ! $HAS_NVIDIA; then
+    log "No NVIDIA GPU: removing nvidia-drm.modeset=1 from GRUB cmdline"
+    sed -i 's/nvidia-drm\.modeset=1//' /etc/default/grub
+    sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[[:space:]]*"/GRUB_CMDLINE_LINUX_DEFAULT=""/' /etc/default/grub
+fi
 
 log "Installing Bluetooth config"
 cp "$SCRIPT_DIR/system/bluetooth/main.conf" /etc/bluetooth/main.conf
@@ -240,11 +341,17 @@ SYSTEM_SERVICES=(
     smartd.service
     power-profiles-daemon.service
     udisks2.service
-    nvidia-suspend.service
-    nvidia-suspend-then-hibernate.service
-    nvidia-hibernate.service
-    nvidia-resume.service
 )
+
+if $HAS_NVIDIA; then
+    log "NVIDIA GPU detected: adding NVIDIA suspend/resume services"
+    SYSTEM_SERVICES+=(
+        nvidia-suspend.service
+        nvidia-suspend-then-hibernate.service
+        nvidia-hibernate.service
+        nvidia-resume.service
+    )
+fi
 
 for svc in "${SYSTEM_SERVICES[@]}"; do
     if systemctl list-unit-files "$svc" &>/dev/null; then
@@ -319,6 +426,8 @@ echo ""
 echo "  User:     $TARGET_USER"
 echo "  Hostname: $TARGET_HOSTNAME"
 echo "  Timezone: $TARGET_TZ"
+echo "  CPU:      $CPU_VENDOR"
+echo "  GPU(s):   $GPU_SUMMARY"
 echo ""
 echo "  Next steps:"
 echo "    1. Reboot the machine"

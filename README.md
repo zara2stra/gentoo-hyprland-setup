@@ -16,6 +16,7 @@ Automated installer that transforms a minimal Gentoo system into a fully configu
 - **NetworkManager** with Rofi WiFi picker
 - **imv** Wayland-native image viewer (set as default for all image types)
 - **Brave** browser, Telegram, Zoom, LibreOffice, GNOME Calendar
+- **Automatic hardware detection** (Intel/AMD CPU, Intel/AMD/NVIDIA GPU)
 - **NVIDIA Optimus** support (Intel iGPU + NVIDIA dGPU with runtime PM)
 - **nftables** firewall (SSH-only inbound)
 - **GRUB** with gentoo_glass theme
@@ -34,7 +35,7 @@ A working minimal Gentoo install with:
 - `fstab` configured for your disk layout
 - Root access
 
-The target machine must have an **Intel CPU** and **NVIDIA GPU**.
+The script auto-detects CPU and GPU hardware. See [Hardware compatibility](#hardware-compatibility) below for tested and untested configurations.
 
 ## Usage
 
@@ -55,14 +56,15 @@ cd gentoo-hyprland-setup
 
 The script will:
 
-1. Configure Portage (USE flags, overlays, keywords)
-2. Install ~75 packages (this takes hours on first run)
-3. Create the user account
-4. Deploy all dotfiles and configs
-5. Set up system configs (firewall, NVIDIA, GRUB, Bluetooth, udev)
-6. Enable systemd services
-7. Rebuild initramfs and GRUB config
-8. Offer to reboot
+1. **Detect hardware** (CPU vendor, GPU vendor) and configure accordingly
+2. Configure Portage (USE flags, overlays, keywords, `VIDEO_CARDS`)
+3. Install ~75 packages (this takes hours on first run)
+4. Create the user account
+5. Deploy all dotfiles and configs
+6. Set up system configs (firewall, GPU drivers, GRUB, Bluetooth, udev)
+7. Enable systemd services (including GPU-specific ones if applicable)
+8. Rebuild initramfs and GRUB config
+9. Offer to reboot
 
 After reboot, log in on TTY1 and Hyprland starts automatically.
 
@@ -95,19 +97,72 @@ dotfiles/          User dotfiles (~/.config/* and shell rc files)
   shell/           .zshrc and .zprofile
   starship.toml    Starship prompt theme
 system/            System configs (root-owned)
-  udev/            NVIDIA runtime PM, keyboard backlight
-  modprobe.d/      NVIDIA kernel module options
-  grub/            GRUB defaults
+  udev/            NVIDIA runtime PM (conditional), keyboard backlight
+  modprobe.d/      NVIDIA kernel module options (conditional)
+  grub/            GRUB defaults (nvidia cmdline stripped if no NVIDIA)
   bluetooth/       BlueZ config
   nftables.conf    Firewall rules
 assets/            Wallpaper image and GRUB theme
 install.sh         Master install script
 ```
 
-## Hardware notes
+## Hardware compatibility
+
+The install script automatically detects CPU and GPU hardware via `/proc/cpuinfo` and `lspci`, then adjusts Portage settings, kernel parameters, driver packages, modprobe configs, udev rules, and systemd services accordingly.
+
+### Tested configurations
+
+| Configuration | CPU | GPU | Status |
+|---|---|---|---|
+| Intel + NVIDIA (Optimus) | Intel | NVIDIA dGPU + Intel iGPU | **Tested** -- source laptop |
+
+### Untested configurations
+
+These profiles are supported by the detection logic but have **not been verified on real hardware**. They should work, but manual troubleshooting may be needed after install.
+
+| Configuration | CPU | GPU | What the script does |
+|---|---|---|---|
+| AMD + NVIDIA | AMD | NVIDIA dGPU | Installs NVIDIA drivers, skips intel-microcode, sets `VIDEO_CARDS="nvidia"` |
+| AMD APU (integrated) | AMD | AMD Radeon (integrated) | No proprietary drivers, mesa-only, sets `VIDEO_CARDS="amdgpu radeonsi"` |
+| AMD + AMD dGPU | AMD | AMD Radeon (discrete) | Same as APU -- mesa handles both, sets `VIDEO_CARDS="amdgpu radeonsi"` |
+| Intel (integrated only) | Intel | Intel iGPU (no dGPU) | No NVIDIA drivers/configs, sets `VIDEO_CARDS="intel"` |
+
+> **Important**: If you are running an untested configuration, the desktop environment should still work, but you may need to troubleshoot GPU-specific issues. The script will show the detected hardware before proceeding so you can verify it is correct.
+
+### What changes per hardware profile
+
+| Component | NVIDIA present | AMD GPU (no NVIDIA) | Intel-only (no NVIDIA) |
+|---|---|---|---|
+| `VIDEO_CARDS` in make.conf | includes `nvidia` | `amdgpu radeonsi` | `intel` |
+| `x11-drivers/nvidia-drivers` | installed | not installed | not installed |
+| `sys-firmware/intel-microcode` | Intel CPU only | not installed | installed |
+| `media-libs/mesa` USE flags | default | `vulkan vaapi` added | default |
+| `media-libs/vulkan-loader` | pulled by nvidia-drivers | added to world | not added |
+| `/etc/modprobe.d/nvidia.conf` | installed | skipped | skipped |
+| `/etc/udev/rules.d/80-nvidia-pm.rules` | installed | skipped | skipped |
+| GRUB `nvidia-drm.modeset=1` | set | removed | removed |
+| nvidia-suspend/hibernate services | enabled | skipped | skipped |
+
+### Troubleshooting (untested hardware)
+
+If Hyprland doesn't start or shows a black screen on AMD GPU:
+
+1. Check that the `amdgpu` kernel module is loaded: `lsmod | grep amdgpu`
+2. Verify `VIDEO_CARDS` in `/etc/portage/make.conf` contains `amdgpu radeonsi`
+3. Ensure `mesa` was built with `vulkan` and `vaapi` USE flags: `emerge -pv mesa`
+4. Check Hyprland logs: `cat /tmp/hypr/$HYPRLAND_INSTANCE_SIGNATURE/hyprland.log`
+5. If using an older AMD GPU (pre-GCN), you may need `VIDEO_CARDS="radeon"` instead
+6. Ensure `sys-kernel/linux-firmware` is installed (provides AMD GPU firmware blobs)
+
+If the display works but Vulkan apps fail or performance is poor on AMD:
+
+1. Verify `media-libs/vulkan-loader` is installed: `emerge -pv vulkan-loader`
+2. Verify Vulkan is working: `vulkaninfo | head` (install `dev-util/vulkan-tools` if missing)
+3. Check that `LIBVA_DRIVER_NAME=radeonsi` is set for VA-API hardware video decode
+
+### General hardware notes
 
 - `MAKEOPTS` is auto-detected from CPU core count
-- `VIDEO_CARDS="intel nvidia"` is set globally
 - Keyboard backlight udev rule only applies if `asus::kbd_backlight` is detected
 - `fstab` is not touched (handled during base Gentoo install)
 - Kernel config is not included (dist-kernel auto-configures)
