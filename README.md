@@ -32,7 +32,6 @@ A working minimal Gentoo install with:
 - GRUB bootloader configured
 - Network connectivity (ethernet or WiFi via `wpa_supplicant`)
 - `fstab` configured for your disk layout
-- `wget` or `git` available (to download this repo)
 - Root access
 
 The target machine must have an **Intel CPU** and **NVIDIA GPU**.
@@ -42,15 +41,10 @@ The target machine must have an **Intel CPU** and **NVIDIA GPU**.
 On the target machine (as root):
 
 ```bash
-# Option A: If git is installed
+# Install git and clone the repo
 emerge -q dev-vcs/git
-git clone https://github.com/<your-username>/gentoo-hyprland-setup.git
+git clone https://github.com/zara2stra/gentoo-hyprland-setup.git
 cd gentoo-hyprland-setup
-
-# Option B: Download tarball (no git needed)
-wget https://github.com/<your-username>/gentoo-hyprland-setup/archive/refs/heads/main.tar.gz
-tar xzf main.tar.gz
-cd gentoo-hyprland-setup-main
 
 # Run the installer
 ./install.sh --user johndoe --password 's3cret!' --hostname mygentoo

@@ -141,9 +141,9 @@ fi
 mkdir -p "$TARGET_HOME"
 
 log "Configuring sudo (passwordless for wheel group)"
-if ! grep -q "^%wheel ALL=(ALL:ALL) NOPASSWD: ALL" /etc/sudoers 2>/dev/null; then
-    echo "%wheel ALL=(ALL:ALL) NOPASSWD: ALL" >> /etc/sudoers
-fi
+mkdir -p /etc/sudoers.d
+echo "%wheel ALL=(ALL:ALL) NOPASSWD: ALL" > /etc/sudoers.d/wheel-nopasswd
+chmod 440 /etc/sudoers.d/wheel-nopasswd
 
 # ─────────────────────────────────────────────
 phase 4 "Dotfile deployment"
