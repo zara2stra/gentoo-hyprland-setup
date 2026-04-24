@@ -1,0 +1,83 @@
+* {
+    bg:         #1e1e2eee;
+    bg-alt:     #313244cc;
+    fg:         #cdd6f4;
+    fg-alt:     #a6adc8;
+    blue:       #89b4fa;
+    surface1:   #45475a;
+    crust:      #11111b;
+    peach:      #fab387;
+    yellow:     #f9e2af;
+
+    font: "JetBrains Mono, Symbols Nerd Font Mono 11";
+    background-color: transparent;
+    text-color: @fg;
+}
+
+window {
+    width: 860px;
+    height: 720px;
+    padding: 20px;
+    border: 2px;
+    border-color: @peach;
+    border-radius: 16px;
+    background-color: @bg;
+    location: center;
+    anchor: center;
+}
+
+mainbox {
+    spacing: 10px;
+    children: [ inputbar, listview ];
+}
+
+inputbar {
+    children: [ textbox-prompt ];
+    padding: 14px 18px;
+    border-radius: 12px;
+    background-color: @bg-alt;
+}
+
+textbox-prompt {
+    expand: true;
+    str: "  Weather Forecast";
+    font: "JetBrains Mono, Symbols Nerd Font Mono Bold 15";
+    text-color: @peach;
+}
+
+entry { enabled: false; }
+
+listview {
+    lines: 40;
+    columns: 1;
+    fixed-height: false;
+    spacing: 1px;
+    scrollbar: true;
+}
+
+scrollbar {
+    handle-width: 4px;
+    handle-color: @surface1;
+    border-radius: 4px;
+}
+
+element {
+    padding: 4px 14px;
+    border-radius: 4px;
+}
+
+element normal.normal,
+element alternate.normal {
+    background-color: transparent;
+    text-color: @fg;
+}
+
+element selected.normal {
+    background-color: @bg-alt;
+    text-color: @yellow;
+}
+
+element-text {
+    font: "JetBrains Mono, Symbols Nerd Font Mono 11";
+    vertical-align: 0.5;
+}

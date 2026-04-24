@@ -1,0 +1,5 @@
+media-libs/libepoxy X
+x11-libs/gtk+ X
+x11-libs/cairo X
+dev-cpp/gtkmm X
+dev-cpp/cairomm X

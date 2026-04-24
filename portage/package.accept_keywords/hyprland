@@ -1,0 +1,9 @@
+gui-wm/hyprland ~amd64
+gui-apps/waybar ~amd64
+x11-terms/kitty ~amd64
+*/*::hyproverlay ~amd64
+x11-terms/kitty-shell-integration ~amd64
+x11-terms/kitty-terminfo ~amd64
+dev-lang/go ~amd64
+dev-lang/go ~amd64
+dev-lang/go-bootstrap ~amd64

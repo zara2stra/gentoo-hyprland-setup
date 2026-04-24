@@ -1,0 +1,98 @@
+* {
+    bg:         #1e1e2eee;
+    bg-alt:     #313244cc;
+    fg:         #cdd6f4;
+    fg-alt:     #a6adc8;
+    blue:       #89b4fa;
+    mauve:      #cba6f7;
+    surface0:   #313244;
+    surface1:   #45475a;
+    crust:      #11111b;
+    red:        #f38ba8;
+    green:      #a6e3a1;
+    peach:      #fab387;
+
+    font: "JetBrains Mono 14";
+    border-color: @surface1;
+    background-color: transparent;
+    text-color: @fg;
+}
+
+window {
+    width: 600px;
+    padding: 20px;
+    border: 1px;
+    border-color: @surface1;
+    border-radius: 12px;
+    background-color: @bg;
+    location: center;
+    anchor: center;
+}
+
+mainbox {
+    spacing: 12px;
+    children: [ inputbar, listview ];
+}
+
+inputbar {
+    children: [ textbox-prompt, entry ];
+    spacing: 12px;
+    padding: 12px;
+    border-radius: 8px;
+    background-color: @bg-alt;
+}
+
+textbox-prompt {
+    expand: false;
+    str: "󰍉";
+    font: "Symbols Nerd Font Mono 18";
+    text-color: @blue;
+    vertical-align: 0.5;
+}
+
+entry {
+    placeholder: "Search...";
+    placeholder-color: @fg-alt;
+    text-color: @fg;
+    cursor: text;
+    vertical-align: 0.5;
+}
+
+listview {
+    lines: 8;
+    columns: 1;
+    fixed-height: true;
+    spacing: 4px;
+    scrollbar: false;
+}
+
+element {
+    padding: 10px 14px;
+    border-radius: 8px;
+    spacing: 12px;
+}
+
+element normal.normal,
+element alternate.normal {
+    background-color: transparent;
+    text-color: @fg;
+}
+
+element selected.normal {
+    background-color: @mauve;
+    text-color: @crust;
+}
+
+element-icon {
+    size: 24px;
+    vertical-align: 0.5;
+}
+
+element-text {
+    vertical-align: 0.5;
+    highlight: bold;
+}
+
+element-text selected {
+    text-color: @crust;
+}

@@ -1,0 +1,156 @@
+{
+    "layer": "top",
+    "position": "top",
+    "height": 48,
+    "margin-top": 8,
+    "margin-left": 4,
+    "margin-right": 4,
+    "spacing": 4,
+    "reload_style_on_change": true,
+    "modules-left": [
+        "custom/launcher",
+        "hyprland/workspaces",
+        "custom/media"
+    ],
+    "modules-center": [
+        "clock",
+        "custom/weather"
+    ],
+    "modules-right": [
+        "hyprland/language",
+        "tray",
+        "custom/sysmon",
+        "group/system",
+        "custom/power"
+    ],
+    "custom/launcher": {
+        "format": "󰍉",
+        "tooltip": false,
+        "on-click": "rofi -show drun -show-icons"
+    },
+    "hyprland/workspaces": {
+        "format": "{id}",
+        "on-click": "activate",
+        "sort-by-number": true,
+        "active-only": false,
+        "all-outputs": true
+    },
+    "custom/media": {
+        "exec": "~/.config/hypr/scripts/mediaplayer.sh",
+        "interval": 3,
+        "return-type": "json",
+        "format": "{}",
+        "on-click": "playerctl play-pause",
+        "on-scroll-up": "playerctl position 5+",
+        "on-scroll-down": "playerctl position 5-",
+        "tooltip": true
+    },
+    "clock": {
+        "format": "{:%I:%M:%S %p}",
+        "format-alt": "{:%A, %B %d  |  %I:%M:%S %p}",
+        "tooltip-format": "<tt><small>{calendar}</small></tt>",
+        "calendar": {
+            "mode": "month",
+            "weeks-pos": "left",
+            "on-scroll": 1,
+            "format": {
+                "months": "<span color='#89b4fa'><b>{}</b></span>",
+                "days": "<span color='#cdd6f4'>{}</span>",
+                "weeks": "<span color='#74c7ec'>W{}</span>",
+                "weekdays": "<span color='#fab387'><b>{}</b></span>",
+                "today": "<span color='#a6e3a1'><b><u>{}</u></b></span>"
+            }
+        },
+        "interval": 1,
+        "on-click": "gnome-calendar"
+    },
+    "custom/weather": {
+        "exec": "~/.config/hypr/scripts/weather.sh",
+        "interval": 900,
+        "return-type": "json",
+        "tooltip": true,
+        "format": "{icon}  {text}",
+        "on-click": "~/.config/hypr/scripts/weather-detail.sh"
+    },
+    "hyprland/language": {
+        "format": "󰌌  {short}",
+        "on-click": "hyprctl switchxkblayout all next"
+    },
+    "group/system": {
+        "orientation": "horizontal",
+        "modules": [
+            "custom/bluetooth",
+            "network",
+            "custom/volume",
+            "battery"
+        ]
+    },
+    "network": {
+        "format-wifi": "󰤨  {essid}",
+        "format-ethernet": "󰈀  {ifname}",
+        "format-disconnected": "󰤮  Off",
+        "tooltip-format-wifi": "Signal: {signalStrength}%\n{ipaddr}/{cidr}\n{bandwidthUpBits} up / {bandwidthDownBits} down",
+        "tooltip-format-ethernet": "{ipaddr}/{cidr}\n{bandwidthUpBits} up / {bandwidthDownBits} down",
+        "max-length": 20,
+        "on-click": "~/.config/hypr/scripts/wifi-popup.sh"
+    },
+    "custom/volume": {
+        "exec": "~/.config/hypr/scripts/volume.sh",
+        "interval": 2,
+        "return-type": "json",
+        "format": "󰕾  {}",
+        "format-alt": "󰕾  {percentage}%",
+        "on-click": "~/.config/hypr/scripts/volume-popup.sh",
+        "on-scroll-up": "wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 2%+",
+        "on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 2%-"
+    },
+    "battery": {
+        "states": {
+            "warning": 30,
+            "critical": 15
+        },
+        "format": "{icon}  {capacity}%",
+        "format-charging": "󰂄  {capacity}%",
+        "format-plugged": "󰂄  {capacity}%",
+        "format-full": "󰁹  Full",
+        "format-icons": [
+            "󰁺",
+            "󰁻",
+            "󰁼",
+            "󰁽",
+            "󰁾",
+            "󰁿",
+            "󰂀",
+            "󰂁",
+            "󰂂",
+            "󰁹"
+        ],
+        "tooltip-format": "{timeTo}\nPower draw: {power:.1f}W",
+        "on-click": "~/.config/hypr/scripts/battery-detail.sh"
+    },
+    "custom/power": {
+        "format": "⏻",
+        "tooltip": false,
+        "on-click": "~/.config/hypr/scripts/power-menu.sh"
+    },
+    "custom/sysmon": {
+        "exec": "~/.config/hypr/scripts/sysmon.sh",
+        "interval": 3,
+        "return-type": "json",
+        "format": "󰍛  {}",
+        "on-click": "kitty --start-as=fullscreen -e btop",
+        "tooltip": true
+    },
+    "tray": {
+        "icon-size": 18,
+        "spacing": 10
+    },
+    "custom/bluetooth": {
+        "exec": "~/.config/hypr/scripts/bluetooth.sh",
+        "interval": 5,
+        "return-type": "json",
+        "format": "󰂯  {}",
+        "on-click": "~/.config/hypr/scripts/bluetooth-popup.sh",
+        "tooltip": true
+    }
+}

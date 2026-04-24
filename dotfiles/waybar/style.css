@@ -1,0 +1,333 @@
+@define-color base #1e1e2e;
+@define-color mantle #181825;
+@define-color crust #11111b;
+@define-color text #cdd6f4;
+@define-color subtext0 #a6adc8;
+@define-color subtext1 #bac2de;
+@define-color surface0 #313244;
+@define-color surface1 #45475a;
+@define-color surface2 #585b70;
+@define-color overlay0 #6c7086;
+@define-color overlay1 #7f849c;
+@define-color overlay2 #9399b2;
+@define-color blue #89b4fa;
+@define-color sapphire #74c7ec;
+@define-color mauve #cba6f7;
+@define-color peach #fab387;
+@define-color green #a6e3a1;
+@define-color red #f38ba8;
+@define-color yellow #f9e2af;
+@define-color pink #f5c2e7;
+@define-color teal #94e2d5;
+@define-color maroon #eba0ac;
+@define-color lavender #b4befe;
+
+* {
+    font-family: "JetBrains Mono", "Symbols Nerd Font Mono";
+    font-size: 14px;
+    font-weight: bold;
+    min-height: 0;
+}
+
+window#waybar {
+    background: transparent;
+}
+
+tooltip {
+    background: alpha(@base, 0.92);
+    border: 1px solid alpha(@surface1, 0.8);
+    border-radius: 12px;
+    color: @text;
+}
+
+tooltip label {
+    color: @text;
+    font-size: 13px;
+}
+
+/* === LEFT: Launcher === */
+#custom-launcher {
+    background: alpha(@base, 0.75);
+    border: 1px solid alpha(@text, 0.05);
+    border-radius: 14px;
+    color: @text;
+    padding: 0 14px;
+    margin: 0 2px;
+    font-size: 22px;
+    transition: all 250ms ease;
+}
+
+#custom-launcher:hover {
+    background: alpha(@surface1, 0.95);
+    border-color: alpha(@text, 0.15);
+    color: @blue;
+}
+
+/* === LEFT: Workspaces === */
+#workspaces {
+    background: alpha(@base, 0.75);
+    border: 1px solid alpha(@text, 0.05);
+    border-radius: 14px;
+    padding: 0 6px;
+    margin: 0 2px;
+}
+
+#workspaces button {
+    color: @overlay0;
+    background: transparent;
+    border-radius: 10px;
+    padding: 4px 10px;
+    margin: 4px 3px;
+    min-width: 28px;
+    font-weight: 600;
+    transition: all 250ms ease;
+}
+
+#workspaces button.active {
+    background: @mauve;
+    color: @crust;
+    font-weight: 900;
+    border-radius: 10px;
+}
+
+#workspaces button.occupied {
+    background: alpha(@surface2, 0.9);
+    color: @text;
+    font-weight: 700;
+}
+
+#workspaces button:hover {
+    background: alpha(@overlay0, 0.9);
+    color: @crust;
+}
+
+/* === LEFT: Media Player === */
+#custom-media {
+    background: alpha(@base, 0.75);
+    border: 1px solid alpha(@text, 0.05);
+    border-radius: 14px;
+    color: @text;
+    padding: 0 14px;
+    margin: 0 2px;
+    transition: all 300ms ease;
+}
+
+#custom-media.playing {
+    border-color: alpha(@mauve, 0.4);
+    color: @text;
+}
+
+#custom-media.paused {
+    color: @subtext0;
+}
+
+#custom-media:hover {
+    background: alpha(@surface1, 0.95);
+    border-color: alpha(@text, 0.15);
+}
+
+/* === CENTER: Clock === */
+#clock {
+    background: alpha(@base, 0.75);
+    border: 1px solid alpha(@text, 0.05);
+    border-radius: 14px;
+    color: @blue;
+    padding: 0 18px;
+    font-size: 16px;
+    font-weight: 900;
+    transition: all 250ms ease;
+}
+
+#clock:hover {
+    background: alpha(@surface1, 0.95);
+    border-color: alpha(@text, 0.15);
+}
+
+/* === CENTER: Weather === */
+#custom-weather {
+    background: alpha(@base, 0.75);
+    border: 1px solid alpha(@text, 0.05);
+    border-radius: 14px;
+    color: @peach;
+    padding: 0 14px;
+    margin: 0 2px;
+    font-weight: 900;
+    transition: all 250ms ease;
+}
+
+#custom-weather:hover {
+    background: alpha(@surface1, 0.95);
+    border-color: alpha(@text, 0.15);
+}
+
+/* === RIGHT: Keyboard Layout === */
+#language {
+    background: alpha(@base, 0.75);
+    border: 1px solid alpha(@text, 0.05);
+    border-radius: 14px;
+    color: @text;
+    padding: 0 14px;
+    margin: 0 2px;
+    transition: all 250ms ease;
+}
+
+#language:hover {
+    background: alpha(@surface1, 0.95);
+    border-color: alpha(@text, 0.15);
+    color: @teal;
+}
+
+/* === RIGHT: System Tray === */
+#tray {
+    background: alpha(@base, 0.75);
+    border: 1px solid alpha(@text, 0.08);
+    border-radius: 14px;
+    padding: 0 12px;
+    margin: 0 2px;
+}
+
+#tray > .passive {
+    -gtk-icon-effect: dim;
+}
+
+#tray > .needs-attention {
+    -gtk-icon-effect: highlight;
+}
+
+/* === RIGHT: System Group Container === */
+#group-system {
+    background: alpha(@base, 0.75);
+    border: 1px solid alpha(@text, 0.08);
+    border-radius: 14px;
+    padding: 0 4px;
+    margin: 0 2px;
+}
+
+/* === RIGHT: System Pills (inside group) === */
+#custom-bluetooth,
+#network,
+#custom-volume,
+#battery {
+    background: alpha(@surface0, 0.4);
+    border-radius: 10px;
+    padding: 4px 12px;
+    margin: 4px 3px;
+    color: @text;
+    font-size: 13px;
+    font-weight: 900;
+    transition: all 300ms ease;
+}
+
+#custom-bluetooth:hover,
+#network:hover,
+#custom-volume:hover,
+#battery:hover {
+    background: alpha(@surface1, 0.7);
+}
+
+/* Bluetooth - blue when on, gradient when connected */
+#custom-bluetooth.connected {
+    background: linear-gradient(90deg, @blue, lighter(@blue));
+    color: @crust;
+}
+
+#custom-bluetooth.on {
+    background: alpha(@surface0, 0.6);
+    color: @blue;
+}
+
+#custom-bluetooth.off {
+    background: alpha(@surface0, 0.4);
+    color: @subtext0;
+}
+
+/* Network - blue gradient when connected */
+#network.wifi {
+    background: linear-gradient(90deg, @blue, lighter(@blue));
+    color: @crust;
+}
+
+#network.ethernet {
+    background: linear-gradient(90deg, @blue, lighter(@blue));
+    color: @crust;
+}
+
+#network.disconnected {
+    background: alpha(@surface0, 0.4);
+    color: @subtext0;
+}
+
+/* Volume - peach gradient when active */
+#custom-volume {
+    background: linear-gradient(90deg, @peach, lighter(@peach));
+    color: @crust;
+}
+
+#custom-volume.muted {
+    background: alpha(@surface0, 0.4);
+    color: @subtext0;
+}
+
+/* Battery - dynamic color based on state */
+#battery {
+    background: linear-gradient(90deg, @text, lighter(@text));
+    color: @crust;
+}
+
+#battery.charging,
+#battery.plugged,
+#battery.full {
+    background: linear-gradient(90deg, @green, lighter(@green));
+    color: @crust;
+}
+
+#battery.warning:not(.charging) {
+    background: linear-gradient(90deg, @yellow, lighter(@yellow));
+    color: @crust;
+}
+
+#battery.critical:not(.charging) {
+    background: linear-gradient(90deg, @red, lighter(@red));
+    color: @crust;
+    animation: pulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes pulse {
+    from { opacity: 1.0; }
+    to { opacity: 0.6; }
+}
+
+/* === RIGHT: Power Button === */
+#custom-power {
+    background: alpha(@base, 0.75);
+    border: 1px solid alpha(@text, 0.05);
+    border-radius: 14px;
+    color: @red;
+    padding: 0 14px;
+    margin: 0 2px;
+    font-size: 20px;
+    transition: all 250ms ease;
+}
+
+#custom-power:hover {
+    background: linear-gradient(90deg, @red, lighter(@red));
+    border-color: @red;
+    color: @crust;
+}
+
+/* === RIGHT: System Monitor === */
+#custom-sysmon {
+    background: alpha(@base, 0.75);
+    border: 1px solid alpha(@text, 0.05);
+    border-radius: 14px;
+    color: @text;
+    padding: 0 14px;
+    margin: 0 2px;
+    font-size: 13px;
+    transition: all 300ms ease;
+}
+
+#custom-sysmon:hover {
+    background: alpha(@surface1, 0.95);
+    border-color: alpha(@green, 0.3);
+}

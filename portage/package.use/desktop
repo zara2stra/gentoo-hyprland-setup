@@ -1,0 +1,11 @@
+dev-libs/libdbusmenu gtk3
+app-crypt/gcr:0 gtk
+media-video/pipewire sound-server pipewire-alsa pulseaudio bluetooth
+gui-apps/waybar tray network pulseaudio pipewire mpris wifi upower
+x11-libs/gdk-pixbuf jpeg gif tiff
+gnome-base/gvfs udisks mtp gphoto2 udev
+xfce-base/thunar udisks exif libnotify
+xfce-base/thunar-volman libnotify
+sys-fs/udiskie libnotify
+media-libs/mesa X
+gui-wm/hyprland X
