@@ -2,6 +2,8 @@
 
 Automated installer that transforms a minimal Gentoo system into a fully configured Hyprland Wayland desktop with Catppuccin theming, custom Waybar widgets, Rofi popups, and all the trimmings.
 
+![Desktop Screenshot](assets/screenshot.png)
+
 ## What you get
 
 - **Hyprland** Wayland compositor with polished config
@@ -12,6 +14,7 @@ Automated installer that transforms a minimal Gentoo system into a fully configu
 - **PipeWire** audio with WirePlumber tuning for stable speaker/BT audio switching
 - **Bluetooth** with interactive Rofi-based pairing/management
 - **NetworkManager** with Rofi WiFi picker
+- **imv** Wayland-native image viewer (set as default for all image types)
 - **Brave** browser, Telegram, Zoom, LibreOffice, GNOME Calendar
 - **NVIDIA Optimus** support (Intel iGPU + NVIDIA dGPU with runtime PM)
 - **nftables** firewall (SSH-only inbound)
@@ -109,5 +112,6 @@ install.sh         Master install script
 - Change wallpaper: run `waypaper` from Rofi
 - Bluetooth: click the Waybar Bluetooth widget
 - WiFi: click the Waybar network widget
-- Screenshots: `Super+Shift+S` (area select) or configured keybinds
+- Screenshots: `Print Screen` (region select), `Shift+Print` (region + edit), `Super+Print` (fullscreen)
+- Images: double-click any image in Thunar to open in imv
 - Power menu: click the power icon in Waybar

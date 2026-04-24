@@ -152,6 +152,13 @@ log "Fixing path placeholders (__HOME__ -> $TARGET_HOME)"
 find "$DOTCONFIG" "$TARGET_HOME/.zshrc" "$TARGET_HOME/.zprofile" \
     -type f -exec sed -i "s|__HOME__|$TARGET_HOME|g" {} +
 
+log "Setting imv as default image viewer"
+su - "$TARGET_USER" -c '
+for mime in image/png image/jpeg image/jpg image/gif image/webp image/bmp image/tiff image/svg+xml image/x-png; do
+    xdg-mime default imv.desktop "$mime"
+done
+' 2>/dev/null || warn "Could not set imv defaults (will apply on first login)"
+
 log "Setting ownership"
 chown -R "$TARGET_USER:$TARGET_USER" "$TARGET_HOME"
 
