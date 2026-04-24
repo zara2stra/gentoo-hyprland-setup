@@ -16,9 +16,10 @@ err()  { echo -e "${RED}[ERROR]${NC} $*" >&2; }
 phase() { echo -e "\n${CYAN}${BOLD}=== Phase $1: $2 ===${NC}\n"; }
 
 usage() {
-    echo "Usage: $0 --user <username> --hostname <hostname> [--timezone <tz>]"
+    echo "Usage: $0 --user <username> --password <password> --hostname <hostname> [--timezone <tz>]"
     echo ""
     echo "  --user       Username to create (added to wheel, video, audio, input)"
+    echo "  --password   Password for the new user"
     echo "  --hostname   Machine hostname"
     echo "  --timezone   Timezone (default: Europe/Amsterdam)"
     echo ""
@@ -27,12 +28,14 @@ usage() {
 }
 
 TARGET_USER=""
+TARGET_PASS=""
 TARGET_HOSTNAME=""
 TARGET_TZ="Europe/Amsterdam"
 
 while [[ $# -gt 0 ]]; do
     case $1 in
         --user)      TARGET_USER="$2"; shift 2 ;;
+        --password)  TARGET_PASS="$2"; shift 2 ;;
         --hostname)  TARGET_HOSTNAME="$2"; shift 2 ;;
         --timezone)  TARGET_TZ="$2"; shift 2 ;;
         -h|--help)   usage ;;
@@ -41,6 +44,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ -z "$TARGET_USER" ]] && { err "--user is required"; usage; }
+[[ -z "$TARGET_PASS" ]] && { err "--password is required"; usage; }
 [[ -z "$TARGET_HOSTNAME" ]] && { err "--hostname is required"; usage; }
 [[ $EUID -ne 0 ]] && { err "This script must be run as root"; exit 1; }
 TARGET_HOME="/home/$TARGET_USER"
@@ -50,6 +54,7 @@ echo "  Gentoo Hyprland Desktop Setup"
 echo "  =============================="
 echo -e "${NC}"
 echo "  User:     $TARGET_USER"
+echo "  Password: ****"
 echo "  Hostname: $TARGET_HOSTNAME"
 echo "  Timezone: $TARGET_TZ"
 echo "  Cores:    $(nproc)"
@@ -69,15 +74,17 @@ cp "$SCRIPT_DIR/portage/make.conf" /etc/portage/make.conf
 sed -i "s/MAKEOPTS=\"-j[0-9]*\"/MAKEOPTS=\"-j${NCORES}\"/" /etc/portage/make.conf
 
 log "Installing package.use files"
+[[ -f /etc/portage/package.use ]] && mv /etc/portage/package.use /etc/portage/package.use.bak
 mkdir -p /etc/portage/package.use
 cp "$SCRIPT_DIR"/portage/package.use/* /etc/portage/package.use/
 
 log "Installing package.accept_keywords files"
+[[ -f /etc/portage/package.accept_keywords ]] && mv /etc/portage/package.accept_keywords /etc/portage/package.accept_keywords.bak
 mkdir -p /etc/portage/package.accept_keywords
 cp "$SCRIPT_DIR"/portage/package.accept_keywords/* /etc/portage/package.accept_keywords/
 
-log "Installing eselect-repository"
-emerge -q app-eselect/eselect-repository 2>&1 | tail -3
+log "Installing eselect-repository and git"
+emerge -q app-eselect/eselect-repository dev-vcs/git 2>&1 | tail -5 || true
 
 log "Enabling overlay repositories"
 while IFS= read -r repo; do
@@ -91,7 +98,7 @@ while IFS= read -r repo; do
 done < "$SCRIPT_DIR/portage/repos.list"
 
 log "Syncing repositories (this may take a while)"
-emerge --sync -q 2>&1 | tail -5
+emerge --sync -q 2>&1 | tail -5 || true
 
 # ─────────────────────────────────────────────
 phase 2 "Package installation"
@@ -102,11 +109,20 @@ cp "$SCRIPT_DIR/portage/world" /var/lib/portage/world
 
 log "Installing all packages (this will take a very long time on first run)"
 log "Running: emerge -uDN @world"
-emerge -uDN @world 2>&1 | tee /var/log/gentoo-setup-emerge.log | \
-    grep -E '^\*\*\*|^>>>|error|FAILED' || true
+set +o pipefail
+emerge -uDN @world 2>&1 | tee /var/log/gentoo-setup-emerge.log
+EMERGE_RC=${PIPESTATUS[0]}
+set -o pipefail
+if [[ $EMERGE_RC -ne 0 ]]; then
+    err "emerge failed (exit code $EMERGE_RC)! Check /var/log/gentoo-setup-emerge.log"
+    exit 1
+fi
 
 log "Merging config file updates"
-etc-update --automode -5 2>&1 | tail -5
+etc-update --automode -5 2>&1 | tail -5 || true
+
+log "Installing waypaper (pip)"
+pip install --break-system-packages waypaper 2>&1 | tail -3 || warn "waypaper pip install failed (non-critical)"
 
 # ─────────────────────────────────────────────
 phase 3 "User creation"
@@ -116,12 +132,18 @@ if id "$TARGET_USER" &>/dev/null; then
     warn "User '$TARGET_USER' already exists, skipping creation"
 else
     log "Creating user: $TARGET_USER"
+    getent group plugdev &>/dev/null || groupadd plugdev
     useradd -m -G wheel,video,audio,input,plugdev -s /bin/zsh "$TARGET_USER"
-    log "Set password for $TARGET_USER:"
-    passwd "$TARGET_USER"
+    echo "$TARGET_USER:$TARGET_PASS" | chpasswd
+    log "Password set for $TARGET_USER"
 fi
 
 mkdir -p "$TARGET_HOME"
+
+log "Configuring sudo (passwordless for wheel group)"
+if ! grep -q "^%wheel ALL=(ALL:ALL) NOPASSWD: ALL" /etc/sudoers 2>/dev/null; then
+    echo "%wheel ALL=(ALL:ALL) NOPASSWD: ALL" >> /etc/sudoers
+fi
 
 # ─────────────────────────────────────────────
 phase 4 "Dotfile deployment"
@@ -131,7 +153,7 @@ log "Deploying dotfiles to $TARGET_HOME/.config"
 DOTCONFIG="$TARGET_HOME/.config"
 mkdir -p "$DOTCONFIG"
 
-for dir in hypr waybar rofi kitty mako wireplumber gtk-3.0 gtk-4.0 waypaper; do
+for dir in hypr waybar rofi kitty mako wireplumber gtk-3.0 gtk-4.0 waypaper cava udiskie fastfetch; do
     if [[ -d "$SCRIPT_DIR/dotfiles/$dir" ]]; then
         log "  Installing $dir"
         cp -r "$SCRIPT_DIR/dotfiles/$dir" "$DOTCONFIG/"
@@ -153,11 +175,19 @@ find "$DOTCONFIG" "$TARGET_HOME/.zshrc" "$TARGET_HOME/.zprofile" \
     -type f -exec sed -i "s|__HOME__|$TARGET_HOME|g" {} +
 
 log "Setting imv as default image viewer"
-su - "$TARGET_USER" -c '
-for mime in image/png image/jpeg image/jpg image/gif image/webp image/bmp image/tiff image/svg+xml image/x-png; do
-    xdg-mime default imv.desktop "$mime"
-done
-' 2>/dev/null || warn "Could not set imv defaults (will apply on first login)"
+MIMEAPPS="$DOTCONFIG/mimeapps.list"
+cat > "$MIMEAPPS" <<'MIME'
+[Default Applications]
+image/png=imv.desktop
+image/jpeg=imv.desktop
+image/jpg=imv.desktop
+image/gif=imv.desktop
+image/webp=imv.desktop
+image/bmp=imv.desktop
+image/tiff=imv.desktop
+image/svg+xml=imv.desktop
+image/x-png=imv.desktop
+MIME
 
 log "Setting ownership"
 chown -R "$TARGET_USER:$TARGET_USER" "$TARGET_HOME"
@@ -188,10 +218,10 @@ cp "$SCRIPT_DIR/system/grub/default-grub" /etc/default/grub
 log "Installing Bluetooth config"
 cp "$SCRIPT_DIR/system/bluetooth/main.conf" /etc/bluetooth/main.conf
 
-log "Installing wallpaper"
-mkdir -p "$TARGET_HOME/Downloads"
+log "Installing wallpaper and creating user directories"
+mkdir -p "$TARGET_HOME/Downloads" "$TARGET_HOME/Pictures/Screenshots"
 cp "$SCRIPT_DIR/assets/cyberpunk_image.jpg" "$TARGET_HOME/Downloads/"
-chown -R "$TARGET_USER:$TARGET_USER" "$TARGET_HOME/Downloads"
+chown -R "$TARGET_USER:$TARGET_USER" "$TARGET_HOME/Downloads" "$TARGET_HOME/Pictures"
 
 log "Installing GRUB theme"
 mkdir -p /boot/grub/themes
@@ -211,6 +241,7 @@ SYSTEM_SERVICES=(
     power-profiles-daemon.service
     udisks2.service
     nvidia-suspend.service
+    nvidia-suspend-then-hibernate.service
     nvidia-hibernate.service
     nvidia-resume.service
 )
@@ -224,17 +255,18 @@ for svc in "${SYSTEM_SERVICES[@]}"; do
     fi
 done
 
-USER_SERVICES=(
-    pipewire.socket
-    pipewire-pulse.socket
-    wireplumber.service
-)
+log "Enabling PipeWire/WirePlumber user services for $TARGET_USER"
+USER_SYSD="$TARGET_HOME/.config/systemd/user"
+mkdir -p "$USER_SYSD/default.target.wants" \
+         "$USER_SYSD/sockets.target.wants" \
+         "$USER_SYSD/pipewire.service.wants"
 
-log "Enabling user services for $TARGET_USER"
-for svc in "${USER_SERVICES[@]}"; do
-    su - "$TARGET_USER" -c "systemctl --user enable $svc" 2>/dev/null || \
-        warn "Could not enable user service $svc (will auto-enable on first login)"
-done
+ln -sf /usr/lib/systemd/user/pipewire.socket       "$USER_SYSD/sockets.target.wants/pipewire.socket"
+ln -sf /usr/lib/systemd/user/pipewire-pulse.socket  "$USER_SYSD/sockets.target.wants/pipewire-pulse.socket"
+ln -sf /usr/lib/systemd/user/pipewire.socket        "$USER_SYSD/default.target.wants/pipewire.socket"
+ln -sf /usr/lib/systemd/user/pipewire-pulse.socket  "$USER_SYSD/default.target.wants/pipewire-pulse.socket"
+ln -sf /usr/lib/systemd/user/wireplumber.service     "$USER_SYSD/pipewire.service.wants/wireplumber.service"
+chown -R "$TARGET_USER:$TARGET_USER" "$TARGET_HOME/.config/systemd"
 
 # ─────────────────────────────────────────────
 phase 7 "Finalize"
@@ -254,6 +286,11 @@ if ! grep -q "^en_US " /etc/locale.gen 2>/dev/null; then
     echo "en_US            # American English (United States)" >> /etc/locale.gen
 fi
 locale-gen 2>/dev/null || true
+localectl set-locale LANG=en_US.utf8 2>/dev/null || true
+
+log "Setting default editor to vi"
+eselect editor set vi 2>/dev/null || true
+env-update 2>/dev/null || true
 
 log "Rebuilding initramfs"
 KVER=$(ls /lib/modules/ | sort -V | tail -1)

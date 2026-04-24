@@ -27,11 +27,12 @@ Automated installer that transforms a minimal Gentoo system into a fully configu
 
 A working minimal Gentoo install with:
 
-- Booted and running (systemd init, not OpenRC)
+- Booted and running (**systemd** init, not OpenRC)
 - Kernel installed and booting (`gentoo-kernel` dist-kernel recommended)
 - GRUB bootloader configured
 - Network connectivity (ethernet or WiFi via `wpa_supplicant`)
 - `fstab` configured for your disk layout
+- `wget` or `git` available (to download this repo)
 - Root access
 
 The target machine must have an **Intel CPU** and **NVIDIA GPU**.
@@ -41,15 +42,21 @@ The target machine must have an **Intel CPU** and **NVIDIA GPU**.
 On the target machine (as root):
 
 ```bash
-# Clone the repo
+# Option A: If git is installed
+emerge -q dev-vcs/git
 git clone https://github.com/<your-username>/gentoo-hyprland-setup.git
 cd gentoo-hyprland-setup
 
+# Option B: Download tarball (no git needed)
+wget https://github.com/<your-username>/gentoo-hyprland-setup/archive/refs/heads/main.tar.gz
+tar xzf main.tar.gz
+cd gentoo-hyprland-setup-main
+
 # Run the installer
-./install.sh --user johndoe --hostname mygentoo
+./install.sh --user johndoe --password 's3cret!' --hostname mygentoo
 
 # With custom timezone:
-./install.sh --user johndoe --hostname mygentoo --timezone America/New_York
+./install.sh --user johndoe --password 's3cret!' --hostname mygentoo --timezone America/New_York
 ```
 
 The script will:
@@ -70,6 +77,7 @@ After reboot, log in on TTY1 and Hyprland starts automatically.
 | Flag | Required | Default | Description |
 |------|----------|---------|-------------|
 | `--user` | Yes | - | Username to create |
+| `--password` | Yes | - | Password for the new user |
 | `--hostname` | Yes | - | Machine hostname |
 | `--timezone` | No | `Europe/Amsterdam` | Timezone |
 
@@ -78,7 +86,7 @@ After reboot, log in on TTY1 and Hyprland starts automatically.
 ```
 portage/           Portage config (make.conf, world, USE flags, keywords, overlays)
 dotfiles/          User dotfiles (~/.config/* and shell rc files)
-  hypr/            Hyprland config + 16 scripts (widgets, popups, media, etc.)
+  hypr/            Hyprland config + lock screen + idle + 16 scripts
   waybar/          Waybar config and CSS
   rofi/            Rofi launcher and popup themes
   kitty/           Kitty terminal config
@@ -87,6 +95,9 @@ dotfiles/          User dotfiles (~/.config/* and shell rc files)
   gtk-3.0/         GTK3 dark theme settings
   gtk-4.0/         GTK4 dark theme settings
   waypaper/        Wallpaper manager config
+  cava/            Audio visualizer config
+  udiskie/         USB automount config
+  fastfetch/       System info display config
   shell/           .zshrc and .zprofile
   starship.toml    Starship prompt theme
 system/            System configs (root-owned)

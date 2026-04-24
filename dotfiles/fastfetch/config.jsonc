@@ -1,0 +1,77 @@
+{
+    "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+    "logo": {
+        "source": "gentoo_small",
+        "color": {
+            "1": "#89b4fa",
+            "2": "#cba6f7"
+        },
+        "padding": {
+            "top": 1,
+            "left": 2,
+            "right": 3
+        }
+    },
+    "display": {
+        "separator": "  ",
+        "color": {
+            "separator": "#cdd6f4"
+        }
+    },
+    "modules": [
+        "break",
+        {
+            "type": "title",
+            "format": "{1}",
+            "color": {
+                "user": "#89b4fa"
+            }
+        },
+        "break",
+        {
+            "type": "os",
+            "key": "󱄅 os ",
+            "keyColor": "#89b4fa"
+        },
+        {
+            "type": "kernel",
+            "key": " ker",
+            "keyColor": "#74c7ec"
+        },
+        {
+            "type": "cpu",
+            "key": " cpu",
+            "keyColor": "#cba6f7"
+        },
+        {
+            "type": "gpu",
+            "key": "󰢮 gpu",
+            "keyColor": "#fab387"
+        },
+        {
+            "type": "memory",
+            "key": "󰘚 ram",
+            "keyColor": "#94e2d5"
+        },
+        {
+            "type": "shell",
+            "key": " sh ",
+            "keyColor": "#f5c2e7"
+        },
+        {
+            "type": "wm",
+            "key": " wm ",
+            "keyColor": "#a6e3a1"
+        },
+        {
+            "type": "terminal",
+            "key": " trm",
+            "keyColor": "#f9e2af"
+        },
+        "break",
+        {
+            "type": "colors",
+            "paddingLeft": 3
+        }
+    ]
+}

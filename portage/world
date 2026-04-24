@@ -2,7 +2,9 @@ app-admin/sudo
 app-editors/vim
 app-eselect/eselect-repository
 app-misc/brightnessctl
+app-misc/cliphist
 app-misc/fastfetch
+app-misc/jq
 app-misc/nwg-look
 app-office/libreoffice
 app-portage/pfl
@@ -27,9 +29,11 @@ gui-apps/swappy
 gui-apps/waybar
 gui-apps/wl-clipboard
 gui-libs/gdk-pixbuf-loader-webp
+gui-libs/xdg-desktop-portal-hyprland
 gui-wm/hyprland
 media-fonts/jetbrains-mono
 media-fonts/source-han-sans
+media-fonts/symbols-nerd-font
 media-gfx/imagemagick
 media-gfx/imv
 media-gfx/sxiv
